@@ -62,7 +62,6 @@ const protect = catchAsync(async (req, res, next) => {
     throw new Error("Please login");
 
   const decoded = promisify(jwt.verify)(token, process.env.JWT_SECRET);
-  console.log("decoded=>", decoded);
   req.user = decoded;
   next();
 })

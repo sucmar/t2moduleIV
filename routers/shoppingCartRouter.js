@@ -1,6 +1,6 @@
 const express = require("express");
 const shoppingCartRouter = express.Router();
-const { getAllShoppingCarts, addShoppingCart, payShoppingCart } = require("../controllers/ShoppingCart")
+const { getAllShoppingCarts, addShoppingCart, payShoppingCart, deleteProductFromCart } = require("../controllers/ShoppingCart")
 const { protect } = require("../controllers/Auth")
 
 shoppingCartRouter
@@ -9,17 +9,15 @@ shoppingCartRouter
   .get(getAllShoppingCarts)
   .post(addShoppingCart);
 
+shoppingCartRouter
+  .route("/product/:id")
+  .all(protect)
+  .delete(deleteProductFromCart);
+
 
 shoppingCartRouter
   .route("/pay/:id")
   .all(protect)
   .post(payShoppingCart)
-
-// shoppingCartRouter
-//   .route("/:id")
-//   .all(protect)
-//   .get(getProductById)
-//   .put(updateProductById)
-//   .delete(deleteProductById);
 
 module.exports = shoppingCartRouter;

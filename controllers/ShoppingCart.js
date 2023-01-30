@@ -1,5 +1,5 @@
-const { findOneAndUpdate } = require("../models/Product");
 const ShoppingCart = require("../models/ShoppingCart");
+const Product = require("../models/Product");
 
 const getAllShoppingCarts = async (req, res) => {
   const carts = await ShoppingCart.find();
@@ -13,31 +13,28 @@ const addShoppingCart = async (req, res) => {
   //find cart by userId
   let cartFound = await ShoppingCart.findOne({ user: req.body.user });
 
-  if (cartFound) {
-    const userId = { user: "req.body.user" }
+  if (cartFound && cartFound.status === "pending") {
+    const _id = cartFound._id;
 
-    const newProductList = cartFound.products.concat(req.body.products)
+    const listOfProductsInBody = req.body.products;
+    const listOfProductsOnDB = cartFound.products;
+
+    const newListOfProducts = [...listOfProductsInBody, ...listOfProductsOnDB]
 
     const cartToUpdate = {
-      invoiceNumber: req.body.invoiceNumber,
-      status: req.body.status,
-      totalAmount: req.body.totalAmount,
-      user: req.body.user,
-      products: newProductList,
+      invoiceNumber: cartFound.invoiceNumber,
+      status: cartFound.status,
+      totalAmount: cartFound.totalAmount,
+      user: cartFound.user,
+      products: newListOfProducts,
     }
-
-    const cartUpdated = await findOneAndUpdate(userId, cartToUpdate)
+    const response = await ShoppingCart.findByIdAndUpdate(_id, cartToUpdate, { new: true })
 
     res.status(200).json({
       status: "ok",
-      message: "cart found",
-      dataUpdated: cartUpdated
+      dataUpdated: response
     });
   } else {
-    // res.status(200).json({
-    //   status: "ok",
-    //   message: "cart not found",
-    // });
     let newShoppingCart = new ShoppingCart();
     newShoppingCart.invoiceNumber = req.body.invoiceNumber;
     newShoppingCart.status = req.body.status;
@@ -53,39 +50,89 @@ const addShoppingCart = async (req, res) => {
   }
 }
 
+
+const deleteProductFromCart = async (req, res) => {
+  const productId = req.params.id;
+
+  const product = await Product.findById({ _id: productId });
+
+  const productInCarts = await ShoppingCart.find({ "products.productId": productId })
+
+  if (product && productInCarts.length > 0) {
+    const carts = await ShoppingCart.find({ status: "pending" });
+    carts.forEach(async (cart) => {
+
+      const newListOfProducts = cart.products.filter((product) => {
+        return product.productId !== productId
+      })
+
+      const _id = cart._id
+
+      const cartToUpdate = {
+        invoiceNumber: cart.invoiceNumber,
+        status: cart.status,
+        totalAmount: cart.totalAmount,
+        user: cart.user,
+        products: newListOfProducts,
+      }
+      await ShoppingCart.findByIdAndUpdate(_id, cartToUpdate, { new: true })
+    })
+
+    res.status(200).json({
+      status: "ok",
+      message: `${product.name} have been deleted from the list of carts`,
+    });
+
+  } else {
+    res.status(200).json({
+      status: "ERROR",
+      message: "The cart does not contain the product",
+    });
+  }
+}
+
 const payShoppingCart = async (req, res) => {
   const _id = req.params.id;
 
   let cart = await ShoppingCart.findById(_id);
 
-  if (cart.products.length > 0 && cart.status === "pending") {
+  if (cart) {
+    if (cart.products.length > 0 && cart.status === "pending") {
 
-    const cartToUpdate = {
-      invoiceNumber: cart.invoiceNumber,
-      status: "pay",
-      totalAmount: cart.totalAmount,
-      user: cart.user,
-      products: cart.products,
+      const cartToUpdate = {
+        invoiceNumber: cart.invoiceNumber,
+        status: "pay",
+        totalAmount: cart.totalAmount,
+        user: cart.user,
+        products: cart.products,
+      }
+      const response = await ShoppingCart.findByIdAndUpdate(_id, cartToUpdate, { new: true })
+
+      res.status(200).json({
+        status: "ok",
+        result: response,
+        message: "the cart has been paid",
+      });
+    } else {
+      res.status(200).json({
+        status: "ERROR",
+        message: "the cart must have products",
+      });
     }
-    const response = await ShoppingCart.findByIdAndUpdate(_id, cartToUpdate, { new: true })
-
-    res.status(200).json({
-      status: "ok",
-      result: response,
-      message: "the cart has been paid",
-    });
   } else {
     res.status(200).json({
-      status: "ok",
-      message: "ERROR, the cart must have products",
+      status: "ERROR",
+      message: "the cart has been not found",
     });
   }
+
 }
 
 
 module.exports = {
   getAllShoppingCarts,
   addShoppingCart,
+  deleteProductFromCart,
   payShoppingCart
 }
 

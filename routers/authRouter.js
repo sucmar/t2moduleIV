@@ -7,7 +7,7 @@ authRouter
   .post(login);
 
 authRouter
-  .route("/signup")
+  .route("/register")
   .post(signup);
 
 
