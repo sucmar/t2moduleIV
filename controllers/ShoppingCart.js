@@ -13,7 +13,7 @@ const addShoppingCart = async (req, res) => {
   //find cart by userId
   let cartFound = await ShoppingCart.findOne({ user: req.body.user });
 
-  if (cartFound && cartFound.status === "pending") {
+  if (cartFound && cartFound.status === "PENDING") {
     const _id = cartFound._id;
 
     const listOfProductsInBody = req.body.products;
@@ -59,7 +59,7 @@ const deleteProductFromCart = async (req, res) => {
   const productInCarts = await ShoppingCart.find({ "products.productId": productId })
 
   if (product && productInCarts.length > 0) {
-    const carts = await ShoppingCart.find({ status: "pending" });
+    const carts = await ShoppingCart.find({ status: "PENDING" });
     carts.forEach(async (cart) => {
 
       const newListOfProducts = cart.products.filter((product) => {
@@ -97,11 +97,11 @@ const payShoppingCart = async (req, res) => {
   let cart = await ShoppingCart.findById(_id);
 
   if (cart) {
-    if (cart.products.length > 0 && cart.status === "pending") {
+    if (cart.products.length > 0 && cart.status === "PENDING") {
 
       const cartToUpdate = {
         invoiceNumber: cart.invoiceNumber,
-        status: "pay",
+        status: "PAID",
         totalAmount: cart.totalAmount,
         user: cart.user,
         products: cart.products,

@@ -26,8 +26,8 @@ const shoppingCart = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'pay'],
-    default: "pending",
+    enum: ['PENDING', 'PAID'],
+    default: "PENDING",
     required: true,
   },
   totalAmount: {
